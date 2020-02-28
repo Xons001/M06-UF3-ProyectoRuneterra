@@ -21,7 +21,7 @@ public class Menu {
 		if (mongo != null) {
 			boolean salir = false, salir2 = false;
 			while(salir == false) {
-
+				login(mongo, database, "Xons001", "1234");
 
 				while(salir2 == false) {
 					System.out.println("=============================================");
@@ -79,14 +79,15 @@ public class Menu {
 
 		// Create the document to specify find criteria
 		Document findNickname = new Document("nickname", nickname);
-
-		// Create the document to specify find criteria
-		Document findPassword = new Document("password", password);
-
+		
 		// Document to store query results
-		//FindIterable<Document> resultDocument = collection.find(findDocument);
-
-		// Return the name of the first returned document
-		//return resultDocument.first().toJson();
+		FindIterable<Document> resultDocument = collection.find(findNickname);
+		
+		//System.out.println("Nick: " + resultDocument.first().toJson());
+		
+		//String cont = resultDocument.first().get(2).toString();
+//		if (cont == password) {
+//			
+//		}
 	}
 }

@@ -8,6 +8,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 
 public class Menu {
@@ -76,18 +77,25 @@ public class Menu {
 	public static void login(MongoClient mongo, MongoDatabase database, String nickname, String password) {
 		// Select the "RuneterraDB" collection
 		MongoCollection<Document> collection = database.getCollection("Users");
+		
+		MongoCursor<Document> cursor = collection.find().iterator();
 
-		// Create the document to specify find criteria
-		Document findNickname = new Document("nickname", nickname);
-		
-		// Document to store query results
-		FindIterable<Document> resultDocument = collection.find(findNickname);
-		
-		//System.out.println("Nick: " + resultDocument.first().toJson());
-		
-		//String cont = resultDocument.first().get(2).toString();
-//		if (cont == password) {
-//			
-//		}
+		try {           
+		    while (cursor.hasNext()) {
+		        Document doc = cursor.next();
+		        //Document nicknameDoc=(Document) doc.get("nickname");
+		        String nicknameText = doc.getString("nickname");
+		        System.out.println(nicknameText);
+		        if(nicknameText.equalsIgnoreCase(nickname)) {
+			        String cont=doc.getString("password");       
+			        if (cont.equalsIgnoreCase(password)) {
+			        	
+			        }
+		        }
+		    }
+		} finally {
+		    cursor.close();
+		}   
+
 	}
 }

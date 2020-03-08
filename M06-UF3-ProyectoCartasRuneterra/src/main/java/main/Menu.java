@@ -14,15 +14,17 @@ import com.mongodb.client.MongoDatabase;
 public class Menu {
 
 	private static Scanner lector = new Scanner(System.in);
-
+	
 	public static void main(String[] args) {
-		MongoClient mongo = crearConexion();
+		MongoClient mongo = Metodos.crearConexion();
 		MongoDatabase database = mongo.getDatabase("RuneterraDB");
 
 		if (mongo != null) {
 			boolean salir = false, salir2 = false;
+			//insert de los datos por defecto, estan en el archivo json
+			Metodos.datosJsonDBDefecto(mongo);
 			while(salir == false) {
-				login(mongo, database, "Xons001", "1234");
+				//Metodos.login(mongo, database, "Xons001", "1234");
 
 				while(salir2 == false) {
 					System.out.println("=============================================");
@@ -66,36 +68,5 @@ public class Menu {
 		}
 	}
 
-	public static MongoClient crearConexion() {
-		System.out.println("Conexión MongoDB");
-		MongoClientURI uri = new MongoClientURI("mongodb+srv://Xons001:1234@legendsofruneterra-h7bku.mongodb.net/test?retryWrites=true&w=majority");
-
-		MongoClient mongoClient = new MongoClient(uri);
-		return mongoClient;
-	}
-
-	public static void login(MongoClient mongo, MongoDatabase database, String nickname, String password) {
-		// Select the "RuneterraDB" collection
-		MongoCollection<Document> collection = database.getCollection("Users");
-		
-		MongoCursor<Document> cursor = collection.find().iterator();
-
-		try {           
-		    while (cursor.hasNext()) {
-		        Document doc = cursor.next();
-		        //Document nicknameDoc=(Document) doc.get("nickname");
-		        String nicknameText = doc.getString("nickname");
-		        System.out.println(nicknameText);
-		        if(nicknameText.equalsIgnoreCase(nickname)) {
-			        String cont=doc.getString("password");       
-			        if (cont.equalsIgnoreCase(password)) {
-			        	
-			        }
-		        }
-		    }
-		} finally {
-		    cursor.close();
-		}   
-
-	}
+	
 }

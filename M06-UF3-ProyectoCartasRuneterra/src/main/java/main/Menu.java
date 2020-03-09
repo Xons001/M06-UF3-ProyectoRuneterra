@@ -22,7 +22,7 @@ public class Menu {
 		if (mongo != null) {
 			boolean salir = false, salir2 = false;
 			//insert de los datos por defecto, estan en el archivo json
-			Metodos.datosJsonDBDefecto(mongo);
+			Metodos.datosJsonDBDefecto(mongo, database);
 			while(salir == false) {
 				//Metodos.login(mongo, database, "Xons001", "1234");
 

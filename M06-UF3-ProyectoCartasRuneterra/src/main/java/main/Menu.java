@@ -20,11 +20,14 @@ public class Menu {
 		MongoDatabase database = mongo.getDatabase("RuneterraDB");
 
 		if (mongo != null) {
-			boolean salir = false, salir2 = false;
-			//insert de los datos por defecto, estan en el archivo json
-			Metodos.datosJsonDBDefecto(mongo, database);
+			boolean salir = false, salir2 = false, existeCartas;
+			existeCartas = Metodos.collectionExists("Cards", database);
+			if (existeCartas==false) {
+				//insert de los datos por defecto, estan en el archivo json
+				Metodos.datosJsonDBDefecto(database);
+			}
+			System.out.println(Metodos.login(mongo, database, "Xonns001", "1234"));
 			while(salir == false) {
-				//Metodos.login(mongo, database, "Xons001", "1234");
 
 				while(salir2 == false) {
 					System.out.println("=============================================");

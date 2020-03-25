@@ -1,10 +1,11 @@
 package main;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
+import java.util.Set;
 
 import org.bson.Document;
 import org.json.simple.JSONArray;
@@ -17,6 +18,9 @@ import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.MongoIterable;
+
+import objetos.Carta;
 
 
 public class Metodos {
@@ -29,30 +33,54 @@ public class Metodos {
 		MongoClient mongoClient = new MongoClient(uri);
 		return mongoClient;
 	}
+	
+	//Retorna true si existe tabla cartas en el mongoDB
+	public static boolean collectionExists(String collectionName, MongoDatabase database) {
+	    MongoIterable<String> collectionNames = database.listCollectionNames();
+	    for (String name : collectionNames) {
+	        if (name.equalsIgnoreCase(collectionName)) {
+	            return true;
+	        }
+	    }
+	    return false;
+	}
 
 	//Los insert de los datos por defecto del archivo json
-	public static void datosJsonDBDefecto(MongoClient mongo, MongoDatabase database) {
+	public static void datosJsonDBDefecto(MongoDatabase database) {
 
-		//JSON parser object to parse read file
-		JSONParser jsonParser = new JSONParser();
+		MongoCollection<Document> collection = database.getCollection("Cards");
 
-		try (FileReader reader = new FileReader("../M06-UF3-ProyectoCartasRuneterra/Cartas.json"))
-		{
-			//Read JSON file
-			Object obj = jsonParser.parse(reader);
+		collection.drop();
 
-			JSONArray cartasList = (JSONArray) obj;
-			System.out.println(cartasList);
-			
-			MongoCollection<Document> collection = database.getCollection("Cartas");
-			
-			List<Document> documents = new ArrayList<Document>();
-			for (int i = 0; i < 100; i++) {
-			    //documents.add(new Document("id", carta.getId()).append("tipo", carta.getTipo()).append("nombre_carta", carta.getNombre_carta()).append("coste_invocacion", carta.getCoste_invocacion()).append("ataque", carta.getAtaque()).append("vida", carta.getVida()).append("habilidad_especial", carta.getHabilidad_especial()).append("faccion", carta.getFaccion());
+		JSONParser parser = new JSONParser();
+		File f = new File("../M06-UF3-ProyectoCartasRuneterra/Cartas.json");
+
+		try {
+			FileReader fr = new FileReader(f);
+			JSONArray array = (JSONArray) parser.parse(fr);
+			Iterator<?> iterator = array.iterator();
+
+			while (iterator.hasNext()) {
+				JSONObject object = (JSONObject) iterator.next();
+				Carta carta = new Carta();
+				carta.setId(Integer.parseInt(object.get("id").toString()));
+				carta.setTipo((String) object.get("tipo"));
+				carta.setNombre_carta((String) object.get("nombre_carta"));
+				carta.setCoste_invocacion(Integer.parseInt(object.get("coste_invocacion").toString()));
+				carta.setAtaque(Integer.parseInt(object.get("ataque").toString()));
+				carta.setVida(Integer.parseInt(object.get("vida").toString()));
+				carta.setHabilidad_especial((String) object.get("habilidad_especial"));
+				carta.setFaccion((String) object.get("faccion"));
+
+				Document doc = new Document("id", carta.getId()).append("tipo", carta.getTipo())
+						.append("nombre_carta", carta.getNombre_carta())
+						.append("coste_invocacion", carta.getCoste_invocacion()).append("ataque", carta.getAtaque())
+						.append("vida", carta.getVida()).append("habilidad_especial", carta.getHabilidad_especial())
+						.append("faccion", carta.getFaccion());
+				
+				collection.insertOne(doc);
 			}
 
-			collection.insertMany(documents);
-			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -60,61 +88,34 @@ public class Metodos {
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
-	}
 
-	public static void parseCartaObject(JSONObject carta) {
-		//Get employee object within list
-		JSONObject cartaObject = (JSONObject) carta.get("cartas");
-
-		int idcarta = (int) cartaObject.get("id");    
-		System.out.println(idcarta);
-
-		String tipo = (String) cartaObject.get("tipo");  
-		System.out.println(tipo);
-		
-		String nombre_carta = (String) cartaObject.get("nombre_carta");  
-		System.out.println(nombre_carta);
-
-		int coste_invocacion = (int) cartaObject.get("coste_invocacion");    
-		System.out.println(coste_invocacion);
-		
-		int ataque = (int) cartaObject.get("ataque");    
-		System.out.println(ataque);
-		
-		int vida = (int) cartaObject.get("vida");    
-		System.out.println(vida);
-		
-		String habilidad_especial = (String) cartaObject.get("habilidad_especial");    
-		System.out.println(habilidad_especial);
-		
-		String faccion = (String) cartaObject.get("faccion");    
-		System.out.println(faccion);
-		
+		System.out.println("Cartas por defecto insertadas");
 	}
 
 	//login inacabado
-	public static void login(MongoClient mongo, MongoDatabase database, String nickname, String password) {
+	public static boolean login(MongoClient mongo, MongoDatabase database, String nickname, String password) {
 		// Select the "RuneterraDB" collection
 		MongoCollection<Document> collection = database.getCollection("Users");
-
-		MongoCursor<Document> cursor = collection.find().iterator();
+				
+		Document findDocument = new Document("nickname", nickname);
+		
+		MongoCursor<Document> cursor = collection.find(findDocument).iterator();
 
 		try {           
 			while (cursor.hasNext()) {
-				Document doc = cursor.next();
-				//Document nicknameDoc=(Document) doc.get("nickname");
-				String nicknameText = doc.getString("nickname");
-				System.out.println(nicknameText);
-				if(nicknameText.equalsIgnoreCase(nickname)) {
-					String cont=doc.getString("password");       
-					if (cont.equalsIgnoreCase(password)) {
-
-					}
+				if(password.equals(cursor.next().get("password").toString())) {
+					System.out.println("Usuario correcto");
+					return true;
+				}else {
+					System.out.println("Usuario o password erronea");
+					return false;
 				}
 			}
 		} finally {
 			cursor.close();
-		}   
+		}
+		System.out.println("No entro en la busqueda");
+		return false;   
 
 	}
 }

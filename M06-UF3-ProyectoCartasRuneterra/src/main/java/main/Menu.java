@@ -14,62 +14,75 @@ import com.mongodb.client.MongoDatabase;
 public class Menu {
 
 	private static Scanner lector = new Scanner(System.in);
-	
+
 	public static void main(String[] args) {
 		MongoClient mongo = Metodos.crearConexion();
 		MongoDatabase database = mongo.getDatabase("RuneterraDB");
 
 		if (mongo != null) {
-			boolean salir = false, salir2 = false, existeCartas;
+			boolean loginResult  = false, salir = false, existeCartas, existeDecks, existeUsers;
 			existeCartas = Metodos.collectionExists("Cards", database);
+			existeDecks = Metodos.collectionExists("Decks", database);
+			existeUsers = Metodos.collectionExists("Users", database);
 			if (existeCartas==false) {
 				//insert de los datos por defecto, estan en el archivo json
-				Metodos.datosJsonDBDefecto(database);
+				Metodos.cartasJsonDefecto(database);
 			}
-			System.out.println(Metodos.login(mongo, database, "Xonns001", "1234"));
-			while(salir == false) {
+			if (existeDecks==false) {
+				//insert de los datos por defecto, estan en el archivo json
+				Metodos.barajasJsonDefecto(database);
+			}
+			if (existeUsers==false) {
+				//insert de los datos por defecto, estan en el archivo json
+				Metodos.usuariosJsonDefecto(database);
+			}
+			
+			while(loginResult == false) {
+				loginResult = Metodos.login(mongo, database);
+				if(loginResult == true ) {
+					while(salir == false) {
+						System.out.println("=============================================");
+						System.out.println("Menu");
+						System.out.println("1.-Crear carta");
+						System.out.println("2.-Crear Baraja");
+						System.out.println("3.-Cargar Carta");
+						System.out.println("4.-Cargar Baraja");
+						System.out.println("5.-Multiples resultados de la busqueda");
+						System.out.println("6.-Salir");
+						System.out.println("=============================================");
+						int pos = lector.nextInt();
 
-				while(salir2 == false) {
-					System.out.println("=============================================");
-					System.out.println("Menu");
-					System.out.println("1.-Insertar documentos");
-					System.out.println("2.-Modificar documentos");
-					System.out.println("3.-Eliminar documentos");
-					System.out.println("4.-Buscar documento");
-					System.out.println("5.-Multiples resultados de la busqueda");
-					System.out.println("6.-Salir");
-					System.out.println("=============================================");
-					int pos = lector.nextInt();
+						switch (pos) {
+						case 1:
 
-					switch (pos) {
-					case 1:
+							break;
 
-						break;
+						case 2:
 
-					case 2:
+							break;
 
-						break;
+						case 3:
 
-					case 3:
+							break;
 
-						break;
+						case 4:
+							System.out.println("Fin del programa");
+							salir = true;
+							break;
 
-					case 4:
-						System.out.println("Fin del programa");
-						salir = true;
-						break;
+						default:
 
-					default:
+							break;
+						}
 
-						break;
 					}
-
 				}
-			} 
+			}
+
 		} else {
 			System.out.println("Error: Conexión no establecida");
 		}
 	}
 
-	
+
 }

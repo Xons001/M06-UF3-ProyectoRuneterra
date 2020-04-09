@@ -17,10 +17,12 @@ import org.json.simple.JSONObject;
 
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.MongoIterable;
+import com.mongodb.client.model.Filters;
 
 import objetos.Baraja;
 import objetos.Carta;
@@ -181,12 +183,12 @@ public class Metodos {
 
 	//la variable user con el login
 	private static Usuarios loginUser = new Usuarios();
-	
+
 	//login
 	public static boolean login(MongoClient mongo, MongoDatabase database) {
 
 		boolean resultLogin = false; 
-		
+
 		// Select the "RuneterraDB" collection
 		MongoCollection<Document> collection = database.getCollection("Users");
 
@@ -203,17 +205,17 @@ public class Metodos {
 
 		try {           
 			Document buscarDoc = new Document();
-			
+
 			buscarDoc.append("nom_usuario", nombreUser);
 			buscarDoc.put("cont_usuario", contUser);
 
 			Iterator<Document> iterator = collection.find(buscarDoc).iterator();
-			
+
 			if (iterator.hasNext()) {
-				
+
 				//Datos que estan guardados en el mongoDB Atlas
 				Document doc = iterator.next();
-				
+
 				//user
 				user.setUsuario_id(doc.getInteger("usuario_id"));
 				user.setCont_usuario(doc.getString("cont_usuario"));
@@ -227,7 +229,7 @@ public class Metodos {
 				loginUser.setNom_usuario(user.getNom_usuario());
 				loginUser.setBarajas_usuario(user.getBarajas_usuario());
 				loginUser.setCartas_compradas(user.getCartas_compradas());
-				
+
 				System.out.println("Has entrado con exito!");
 				System.out.println("-----------------------------------------------------");
 
@@ -239,7 +241,7 @@ public class Metodos {
 				System.out.println("-----------------------------------------------------");
 
 				resultLogin = true;
-				
+
 			} else {
 				System.out.println("Usuario o contra incorrecta, vuelve a escribir los datos");
 			}
@@ -248,7 +250,64 @@ public class Metodos {
 			System.out.println("Usuario o contra incorrecta");
 			resultLogin = false;
 		}
-		
+
 		return resultLogin;
 	}
+
+	public static void comprarCartas(MongoClient mongo, MongoDatabase database) {
+		// Select the "RuneterraDB" collection
+		MongoCollection<Document> collectionUsers = database.getCollection("Users");
+		MongoCollection<Document> collectionCards = database.getCollection("Cards");
+
+		Scanner lector = new Scanner(System.in);
+		boolean salir = false;
+
+		FindIterable<Document> todasCartas = collectionCards.find();
+
+		ArrayList<Integer> arrayCartasCompradas = loginUser.getCartas_compradas();
+		ArrayList<Integer> arrayCartasDisponibles = new ArrayList<Integer>();
+
+		for (Document document : todasCartas) {
+			arrayCartasDisponibles.add(document.getInteger("id"));
+		}
+
+		while (salir == false) {
+			System.out.print("Escribe la carta id que quieres comprar, escribe un numero negativo para finalizar la compra => ");
+			int carta_id = lector.nextInt();
+
+			if (carta_id < 0) {
+				salir = true;
+				System.out.println("Finalizacion de la compra de cartas");
+			} else {
+				boolean existe = false; 
+				for (Integer busquedaArrayDisponibles : arrayCartasDisponibles) {
+					if (carta_id == busquedaArrayDisponibles) {
+						for (Integer busquedaArrayCompradas : arrayCartasCompradas) {
+							if (carta_id != busquedaArrayCompradas) {
+								System.out.println("Carta " + carta_id + " comprada para el usuario " + loginUser.getNom_usuario());
+								arrayCartasCompradas.add(carta_id);
+								existe = true;
+							}
+						}
+					
+					}
+				}
+				if (existe == false) {
+					System.out.println("La carta no existe o ya esta en lista comprada, no se puede insertar");
+				}
+
+			}
+		}
+		
+		Document query = new Document("usuario_id", loginUser.getUsuario_id());
+        Document newDoc = new Document("cartas_compradas", arrayCartasCompradas);
+        Document updateDoc = new Document("$set", newDoc);
+
+        collectionUsers.updateOne(query, updateDoc);
+        
+        System.out.println("Cartas compradas => " + loginUser.getCartas_compradas());
+	}
+
+
+
 }

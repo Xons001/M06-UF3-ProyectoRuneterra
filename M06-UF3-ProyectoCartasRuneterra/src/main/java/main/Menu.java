@@ -39,22 +39,23 @@ public class Menu {
 			
 			while(loginResult == false) {
 				loginResult = Metodos.login(mongo, database);
+				
 				if(loginResult == true ) {
 					while(salir == false) {
 						System.out.println("=============================================");
 						System.out.println("Menu");
-						System.out.println("1.-Crear carta");
+						System.out.println("1.-Comprar cartas");
 						System.out.println("2.-Crear Baraja");
-						System.out.println("3.-Cargar Carta");
-						System.out.println("4.-Cargar Baraja");
-						System.out.println("5.-Multiples resultados de la busqueda");
-						System.out.println("6.-Salir");
+						System.out.println("3.-Dejar la base de datos por defecto");
+						System.out.println("4.-Editar baraja");
+						
+						System.out.println("5.-Salir");
 						System.out.println("=============================================");
 						int pos = lector.nextInt();
 
 						switch (pos) {
 						case 1:
-
+							Metodos.comprarCartas(mongo, database);
 							break;
 
 						case 2:
@@ -66,6 +67,14 @@ public class Menu {
 							break;
 
 						case 4:
+
+							break;
+
+						case 5:
+
+							break;
+
+						case 6:
 							System.out.println("Fin del programa");
 							salir = true;
 							break;

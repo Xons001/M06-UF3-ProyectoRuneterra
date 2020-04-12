@@ -48,7 +48,6 @@ public class Menu {
 						System.out.println("2.-Crear Baraja");
 						System.out.println("3.-Editar baraja");
 						System.out.println("4.-Volver a dejar las barajas por defecto sin borrar las nuevas");
-
 						System.out.println("5.-Salir");
 						System.out.println("=============================================");
 						int pos = lector.nextInt();
@@ -71,10 +70,6 @@ public class Menu {
 							break;
 
 						case 5:
-
-							break;
-
-						case 6:
 							System.out.println("Fin del programa");
 							salir = true;
 							break;

@@ -46,9 +46,9 @@ public class Menu {
 						System.out.println("Menu");
 						System.out.println("1.-Comprar cartas");
 						System.out.println("2.-Crear Baraja");
-						System.out.println("3.-Dejar la base de datos por defecto");
-						System.out.println("4.-Editar baraja");
-						
+						System.out.println("3.-Editar baraja");
+						System.out.println("4.-Volver a dejar las barajas por defecto sin borrar las nuevas");
+
 						System.out.println("5.-Salir");
 						System.out.println("=============================================");
 						int pos = lector.nextInt();
@@ -59,7 +59,7 @@ public class Menu {
 							break;
 
 						case 2:
-
+							Metodos.crearBaraja(mongo, database);
 							break;
 
 						case 3:
@@ -67,7 +67,7 @@ public class Menu {
 							break;
 
 						case 4:
-
+							Metodos.barajasPredefenidas(mongo, database);
 							break;
 
 						case 5:

@@ -28,6 +28,8 @@ import objetos.Baraja;
 import objetos.Carta;
 import objetos.Usuarios;
 
+import static com.mongodb.client.model.Filters.*;
+
 
 public class Metodos {
 
@@ -38,6 +40,18 @@ public class Metodos {
 
 		MongoClient mongoClient = new MongoClient(uri);
 		return mongoClient;
+	}
+
+	public static int leerInt() {
+		Scanner lector = new Scanner(System.in);
+		int num = lector.nextInt();
+		return num;
+	}
+
+	public static String leerString() {
+		Scanner lector = new Scanner(System.in);
+		String texto = lector.nextLine();
+		return texto;
 	}
 
 	//Retorna true si existe tabla cartas en el mongoDB
@@ -192,15 +206,14 @@ public class Metodos {
 		// Select the "RuneterraDB" collection
 		MongoCollection<Document> collection = database.getCollection("Users");
 
-		Scanner lector = new Scanner(System.in);
 		Usuarios user = new Usuarios();
 
 		System.out.println("-----------------------------------------------------");
 		System.out.println("Iniciando sesion");
 		System.out.print("Introduce el nombre del usuario: ");
-		String nombreUser = lector.nextLine();
+		String nombreUser = leerString();
 		System.out.print("Introduce la cont del usuario: ");
-		String contUser = lector.nextLine();
+		String contUser = leerString();
 		System.out.println("-----------------------------------------------------");
 
 		try {           
@@ -227,8 +240,8 @@ public class Metodos {
 				loginUser.setUsuario_id(user.getUsuario_id());
 				loginUser.setCont_usuario(user.getCont_usuario());
 				loginUser.setNom_usuario(user.getNom_usuario());
-				loginUser.setBarajas_usuario(user.getBarajas_usuario());
-				loginUser.setCartas_compradas(user.getCartas_compradas());
+				loginUser.setBarajas_usuario((ArrayList<Integer>)user.getBarajas_usuario());
+				loginUser.setCartas_compradas((ArrayList<Integer>)user.getCartas_compradas());
 
 				System.out.println("Has entrado con exito!");
 				System.out.println("-----------------------------------------------------");
@@ -259,7 +272,6 @@ public class Metodos {
 		MongoCollection<Document> collectionUsers = database.getCollection("Users");
 		MongoCollection<Document> collectionCards = database.getCollection("Cards");
 
-		Scanner lector = new Scanner(System.in);
 		boolean salir = false;
 
 		FindIterable<Document> todasCartas = collectionCards.find();
@@ -273,7 +285,7 @@ public class Metodos {
 
 		while (salir == false) {
 			System.out.print("Escribe la carta id que quieres comprar, escribe un numero negativo para finalizar la compra => ");
-			int carta_id = lector.nextInt();
+			int carta_id = leerInt();
 
 			if (carta_id < 0) {
 				salir = true;
@@ -282,14 +294,16 @@ public class Metodos {
 				boolean existe = false; 
 				for (Integer busquedaArrayDisponibles : arrayCartasDisponibles) {
 					if (carta_id == busquedaArrayDisponibles) {
-						for (Integer busquedaArrayCompradas : arrayCartasCompradas) {
+						
+						//error aqui 'java.lang.Long cannot be cast to java.lang.Integer'
+						for (Integer busquedaArrayCompradas : (ArrayList <Integer>)arrayCartasCompradas) {
 							if (carta_id != busquedaArrayCompradas) {
 								System.out.println("Carta " + carta_id + " comprada para el usuario " + loginUser.getNom_usuario());
 								arrayCartasCompradas.add(carta_id);
 								existe = true;
 							}
 						}
-					
+
 					}
 				}
 				if (existe == false) {
@@ -298,16 +312,137 @@ public class Metodos {
 
 			}
 		}
-		
-		Document query = new Document("usuario_id", loginUser.getUsuario_id());
-        Document newDoc = new Document("cartas_compradas", arrayCartasCompradas);
-        Document updateDoc = new Document("$set", newDoc);
 
-        collectionUsers.updateOne(query, updateDoc);
-        
-        System.out.println("Cartas compradas => " + loginUser.getCartas_compradas());
+		Document query = new Document("usuario_id", loginUser.getUsuario_id());
+		Document newDoc = new Document("cartas_compradas", arrayCartasCompradas);
+		Document updateDoc = new Document("$set", newDoc);
+
+		collectionUsers.updateOne(query, updateDoc);
+
+		System.out.println("Cartas compradas => " + loginUser.getCartas_compradas());
+	}
+
+	public static void crearBaraja(MongoClient mongo, MongoDatabase database) {
+		MongoCollection<Document> collectionDecks = database.getCollection("Decks");
+		MongoCollection<Document> collectionCards = database.getCollection("Cards");
+
+		boolean salir = false;
+		int sumaCosteBaraja = 0;
+
+		ArrayList<Integer> arrayCartasCompradas = loginUser.getCartas_compradas();
+		ArrayList<Integer> arrayCartasBaraja = new ArrayList<Integer>();
+		ArrayList<Integer> arrayCartasMultiplicadas = new ArrayList<Integer>();
+
+		Baraja baraja = new Baraja();
+		Document barajaDocument = new Document();
+
+		//Con esto contamos todas las barajas que hay en la base de datos y ponemos la siguiente id
+		int baraja_id = (int) (collectionDecks.countDocuments() + 1);
+
+		System.out.println("Introduce el nombre del mazo: ");
+		String nombre_baraja = leerString();
+
+		while(salir == false) {
+			System.out.println("Introduce el id de la carta que vas a insertar en la baraja, escribe un numero negativo para finalizar la insercion => ");
+			int carta_id = leerInt();
+
+			if (carta_id < 0) {
+				salir = true;
+				System.out.println("Finalizacion de la compra de cartas");
+			} else {
+				//esta boleana servira para saber si se ha insertado en la baraja o no
+				boolean existe = false;
+				//recorremos todo el array de cartas compradas del usuario para saber si podemos insertarlo en la base de datos
+				
+				
+				//error aqui 'java.lang.Long cannot be cast to java.lang.Integer'
+				for (Integer busquedaArrayCompradas : (ArrayList <Integer>) arrayCartasCompradas) {
+
+					if (carta_id == busquedaArrayCompradas) {
+
+						//Con esto cogemos todos los datos de esta carta para saber su coste de invocacion y asi sumarlo al coste de la baraja
+						FindIterable<Document> findIt = collectionCards.find(eq("id", carta_id));
+						Document doc2 = findIt.first();
+
+						//si su coste no supera los 60 se inserta la carta a la baraja
+						if(sumaCosteBaraja < 60) {
+							System.out.println("Carta " + carta_id + " insertada a la baraja " + nombre_baraja + " para el usuario " + loginUser.getNom_usuario());
+							//Lo insertamos en la baraja
+							arrayCartasBaraja.add(carta_id);
+							//lo sumamos al coste de la baraja
+							sumaCosteBaraja = sumaCosteBaraja + (Integer) doc2.get("coste_invocacion");
+							//como la carta existia y se ha insertado la booleana se cambia para confirmar de que se ha insertado
+							existe = true;
+						} else {
+							//Tambien finaliza el programa cuando supera el coste de invocacion de la baraja
+							System.out.println("Baraja acabada. Coste de invocacion superado");
+							salir = true;
+						}
+
+						/*
+						 * este bucle lo que hace es comprobar de nuevo el array de barajas y comprobar que
+						 * la carta que se acaba de insertar no esta mas de dos veces insertada. Si es asi,
+						 * se inserta tambien en otro array que lo unico que hara sera almacenarse todas las
+						 * cartas que haya encontrado repetido mas de dos veces.
+						 */
+						int cartaRepetida = 0;
+						for (Integer id : arrayCartasBaraja) {
+
+							if (id == carta_id) {
+								cartaRepetida++;
+							}
+
+							if (cartaRepetida > 2) {
+								arrayCartasMultiplicadas.add(carta_id);
+							}
+						}
+
+					}
+				}
+
+				if (existe == false) {
+					System.out.println("La carta no existe o ya esta la baraja, no se puede insertar");
+				}
+			}
+		}
+
+		/*
+		 * Aqui es donde recorrera los dos array, si coinciden en algunos de los dos la misma id
+		 * se eliminara de la baraja creada porque querra decir que esta multiplicada mas de dos veces
+		 */
+		for (Integer id : arrayCartasBaraja) {
+			if (arrayCartasBaraja.indexOf(id) == arrayCartasMultiplicadas.indexOf(id)) {
+				arrayCartasBaraja.remove(id);
+			}
+		}
+
+		//finalmente insertamos la baraja en la base de datos
+		baraja.setBaraja_id(baraja_id);
+		baraja.setNombre_baraja(nombre_baraja);
+		baraja.setValor_baraja(sumaCosteBaraja);
+		baraja.setCartas_baraja(arrayCartasBaraja);
+
+		barajaDocument = new Document("baraja_id", baraja.getBaraja_id()).append("nombre_baraja", baraja.getNombre_baraja())
+				.append("valor_baraja", baraja.getValor_baraja()).append("cartas_barajas", baraja.getCartas_baraja());
+
+		collectionDecks.insertOne(barajaDocument);
 	}
 
 
+	public static void barajasPredefenidas(MongoClient mongo, MongoDatabase database) {
+		MongoCollection<Document> collectionDecks = database.getCollection("Decks");
+
+		System.out.println("Baraja 1, 2 y 3 insertadas por defecto de nuevo");
+		Document findDocument1 = new Document("baraja_id", "1");
+		collectionDecks.findOneAndDelete(findDocument1);
+
+		Document findDocument2 = new Document("baraja_id", "2");
+		collectionDecks.findOneAndDelete(findDocument2);
+
+		Document findDocument3 = new Document("baraja_id", "3");
+		collectionDecks.findOneAndDelete(findDocument3);
+
+		barajasJsonDefecto(database);
+	}
 
 }

@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Scanner;
 import java.util.Set;
@@ -19,10 +20,8 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.MongoIterable;
-import com.mongodb.client.model.Filters;
 
 import objetos.Baraja;
 import objetos.Carta;
@@ -42,9 +41,9 @@ public class Metodos {
 		return mongoClient;
 	}
 
-	public static int leerInt() {
+	public static Number leerInt() {
 		Scanner lector = new Scanner(System.in);
-		int num = lector.nextInt();
+		Number num = lector.nextInt();
 		return num;
 	}
 
@@ -174,6 +173,7 @@ public class Metodos {
 				usuario.setUsuario_id(Integer.parseInt(object.get("usuario_id").toString()));
 				usuario.setCont_usuario((String) object.get("cont_usuario"));
 				usuario.setNom_usuario((String) object.get("nom_usuario"));
+
 				usuario.setBarajas_usuario((ArrayList<Integer>) object.get("barajas_usuario"));
 				usuario.setCartas_compradas((ArrayList<Integer>) object.get("cartas_compradas"));
 
@@ -285,22 +285,21 @@ public class Metodos {
 
 		while (salir == false) {
 			System.out.print("Escribe la carta id que quieres comprar, escribe un numero negativo para finalizar la compra => ");
-			int carta_id = leerInt();
+			Number carta_id = leerInt();
 
-			if (carta_id < 0) {
+			if (carta_id.intValue() < 0) {
 				salir = true;
 				System.out.println("Finalizacion de la compra de cartas");
 			} else {
 				boolean existe = false; 
-				for (Integer busquedaArrayDisponibles : arrayCartasDisponibles) {
+				for (Number busquedaArrayDisponibles : arrayCartasDisponibles) {
 					if (carta_id == busquedaArrayDisponibles) {
-						
-						//error aqui 'java.lang.Long cannot be cast to java.lang.Integer'
-						for (Integer busquedaArrayCompradas : (ArrayList <Integer>)arrayCartasCompradas) {
-							if (carta_id != busquedaArrayCompradas) {
+						for (Number busquedaArrayCompradas : arrayCartasCompradas) {
+							if (!arrayCartasCompradas.contains(carta_id)) {
 								System.out.println("Carta " + carta_id + " comprada para el usuario " + loginUser.getNom_usuario());
-								arrayCartasCompradas.add(carta_id);
+								arrayCartasCompradas.add(carta_id.intValue());
 								existe = true;
+								break;
 							}
 						}
 
@@ -331,7 +330,7 @@ public class Metodos {
 
 		ArrayList<Integer> arrayCartasCompradas = loginUser.getCartas_compradas();
 		ArrayList<Integer> arrayCartasBaraja = new ArrayList<Integer>();
-		ArrayList<Integer> arrayCartasMultiplicadas = new ArrayList<Integer>();
+		HashMap<Number, Integer> cartaRepetidas = new HashMap<Number, Integer>();
 
 		Baraja baraja = new Baraja();
 		Document barajaDocument = new Document();
@@ -342,59 +341,55 @@ public class Metodos {
 		System.out.println("Introduce el nombre del mazo: ");
 		String nombre_baraja = leerString();
 
+		int cartaRepetida = 0;
+
 		while(salir == false) {
 			System.out.println("Introduce el id de la carta que vas a insertar en la baraja, escribe un numero negativo para finalizar la insercion => ");
-			int carta_id = leerInt();
+			Number carta_id = leerInt();
 
-			if (carta_id < 0) {
+			if (carta_id.intValue() < 0) {
 				salir = true;
 				System.out.println("Finalizacion de la compra de cartas");
 			} else {
 				//esta boleana servira para saber si se ha insertado en la baraja o no
 				boolean existe = false;
 				//recorremos todo el array de cartas compradas del usuario para saber si podemos insertarlo en la base de datos
-				
-				
-				//error aqui 'java.lang.Long cannot be cast to java.lang.Integer'
-				for (Integer busquedaArrayCompradas : (ArrayList <Integer>) arrayCartasCompradas) {
 
-					if (carta_id == busquedaArrayCompradas) {
+				for (Number busquedaArrayCompradas : arrayCartasCompradas) {
 
+					cartaRepetidas.put(busquedaArrayCompradas, cartaRepetida);
+
+					Long l= Long.valueOf(carta_id.toString());
+
+					if (arrayCartasCompradas.contains(l)) {
 						//Con esto cogemos todos los datos de esta carta para saber su coste de invocacion y asi sumarlo al coste de la baraja
 						FindIterable<Document> findIt = collectionCards.find(eq("id", carta_id));
 						Document doc2 = findIt.first();
 
 						//si su coste no supera los 60 se inserta la carta a la baraja
 						if(sumaCosteBaraja < 60) {
-							System.out.println("Carta " + carta_id + " insertada a la baraja " + nombre_baraja + " para el usuario " + loginUser.getNom_usuario());
-							//Lo insertamos en la baraja
-							arrayCartasBaraja.add(carta_id);
-							//lo sumamos al coste de la baraja
-							sumaCosteBaraja = sumaCosteBaraja + (Integer) doc2.get("coste_invocacion");
-							//como la carta existia y se ha insertado la booleana se cambia para confirmar de que se ha insertado
-							existe = true;
+
+							//ERROR AQUI
+							if (cartaRepetidas.get(carta_id) < 2) {
+								System.out.println("Carta " + carta_id + " insertada a la baraja " + nombre_baraja + " para el usuario " + loginUser.getNom_usuario());
+								//Lo insertamos en la baraja
+								arrayCartasBaraja.add(carta_id.intValue());
+								//lo sumamos al coste de la baraja
+								sumaCosteBaraja = sumaCosteBaraja + (Integer) doc2.get("coste_invocacion");
+								//como la carta existia y se ha insertado la booleana se cambia para confirmar de que se ha insertado
+								existe = true;
+								//le sumamos 1 a la cantidad de la carta
+								cartaRepetidas.put(carta_id, cartaRepetidas.get(carta_id) + 1);
+								break;
+							} else {
+								System.out.println("Carta repetida, no se puede tener mas de dos cartas repetidas");
+								cartaRepetida = 0;
+							}
+							
 						} else {
 							//Tambien finaliza el programa cuando supera el coste de invocacion de la baraja
 							System.out.println("Baraja acabada. Coste de invocacion superado");
 							salir = true;
-						}
-
-						/*
-						 * este bucle lo que hace es comprobar de nuevo el array de barajas y comprobar que
-						 * la carta que se acaba de insertar no esta mas de dos veces insertada. Si es asi,
-						 * se inserta tambien en otro array que lo unico que hara sera almacenarse todas las
-						 * cartas que haya encontrado repetido mas de dos veces.
-						 */
-						int cartaRepetida = 0;
-						for (Integer id : arrayCartasBaraja) {
-
-							if (id == carta_id) {
-								cartaRepetida++;
-							}
-
-							if (cartaRepetida > 2) {
-								arrayCartasMultiplicadas.add(carta_id);
-							}
 						}
 
 					}
@@ -403,16 +398,6 @@ public class Metodos {
 				if (existe == false) {
 					System.out.println("La carta no existe o ya esta la baraja, no se puede insertar");
 				}
-			}
-		}
-
-		/*
-		 * Aqui es donde recorrera los dos array, si coinciden en algunos de los dos la misma id
-		 * se eliminara de la baraja creada porque querra decir que esta multiplicada mas de dos veces
-		 */
-		for (Integer id : arrayCartasBaraja) {
-			if (arrayCartasBaraja.indexOf(id) == arrayCartasMultiplicadas.indexOf(id)) {
-				arrayCartasBaraja.remove(id);
 			}
 		}
 

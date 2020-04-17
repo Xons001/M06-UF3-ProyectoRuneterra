@@ -2,21 +2,21 @@ package main;
 
 import java.util.Scanner;
 
-import org.bson.Document;
-
 import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Menu {
 
 	private static Scanner lector = new Scanner(System.in);
 
 	public static void main(String[] args) {
+		//disableLogs();
+
 		MongoClient mongo = Metodos.crearConexion();
+		
 		MongoDatabase database = mongo.getDatabase("RuneterraDB");
 
 		if (mongo != null) {
@@ -50,8 +50,9 @@ public class Menu {
 						System.out.println("4.-Volver a dejar las barajas por defecto sin borrar las nuevas");
 						System.out.println("5.-Salir");
 						System.out.println("=============================================");
+						System.out.print("Escoge la opcion que quieres: ");
 						int pos = lector.nextInt();
-
+						System.out.println("---------------------------------------------");
 						switch (pos) {
 						case 1:
 							Metodos.comprarCartas(mongo, database);
@@ -62,7 +63,7 @@ public class Menu {
 							break;
 
 						case 3:
-
+							Metodos.editarBaraja(mongo, database);
 							break;
 
 						case 4:
@@ -89,4 +90,14 @@ public class Menu {
 	}
 
 
+	private static void disableLogs() {
+		Logger mongoLogger = Logger.getLogger("org.mongodb.driver");
+		mongoLogger.setLevel(Level.SEVERE);
+		mongoLogger.getLogger("org.mongodb.driver.connection").setLevel(Level.OFF);
+		mongoLogger.getLogger("org.mongodb.driver.management").setLevel(Level.OFF);
+		mongoLogger.getLogger("org.mongodb.driver.cluster").setLevel(Level.OFF);
+		mongoLogger.getLogger("org.mongodb.driver.protocol.insert").setLevel(Level.OFF);
+		mongoLogger.getLogger("org.mongodb.driver.protocol.query").setLevel(Level.OFF);
+		mongoLogger.getLogger("org.mongodb.driver.protocol.update").setLevel(Level.OFF);
+	}
 }

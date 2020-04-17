@@ -41,7 +41,7 @@ public class Metodos {
 		return mongoClient;
 	}
 
-	public static Number leerInt() {
+	public static Number leerNumber() {
 		Scanner lector = new Scanner(System.in);
 		Number num = lector.nextInt();
 		return num;
@@ -285,7 +285,7 @@ public class Metodos {
 
 		while (salir == false) {
 			System.out.print("Escribe la carta id que quieres comprar, escribe un numero negativo para finalizar la compra => ");
-			Number carta_id = leerInt();
+			Number carta_id = leerNumber();
 
 			if (carta_id.intValue() < 0) {
 				salir = true;
@@ -324,81 +324,110 @@ public class Metodos {
 	public static void crearBaraja(MongoClient mongo, MongoDatabase database) {
 		MongoCollection<Document> collectionDecks = database.getCollection("Decks");
 		MongoCollection<Document> collectionCards = database.getCollection("Cards");
+		MongoCollection<Document> collectionUsers = database.getCollection("Users");
 
 		boolean salir = false;
 		int sumaCosteBaraja = 0;
 
 		ArrayList<Integer> arrayCartasCompradas = loginUser.getCartas_compradas();
 		ArrayList<Integer> arrayCartasBaraja = new ArrayList<Integer>();
-		HashMap<Number, Integer> cartaRepetidas = new HashMap<Number, Integer>();
+		HashMap<Integer, Integer> cartaRepetidas = new HashMap<Integer, Integer>();
+		ArrayList<Integer> arrayBarajasUser = new ArrayList<Integer>();
+		arrayBarajasUser = loginUser.getBarajas_usuario();
 
 		Baraja baraja = new Baraja();
 		Document barajaDocument = new Document();
 
 		//Con esto contamos todas las barajas que hay en la base de datos y ponemos la siguiente id
 		int baraja_id = (int) (collectionDecks.countDocuments() + 1);
+		int cantidadCartas = 0;
 
-		System.out.println("Introduce el nombre del mazo: ");
+		System.out.println("Introduce el nombre de la baraja: ");
 		String nombre_baraja = leerString();
 
-		int cartaRepetida = 0;
-
 		while(salir == false) {
-			System.out.println("Introduce el id de la carta que vas a insertar en la baraja, escribe un numero negativo para finalizar la insercion => ");
-			Number carta_id = leerInt();
+			while (cantidadCartas <= 20) {
+				System.out.print("Introduce el id de la carta que vas a insertar en la baraja, escribe un numero negativo para finalizar la insercion => ");
+				Number carta_id = leerNumber();
 
-			if (carta_id.intValue() < 0) {
-				salir = true;
-				System.out.println("Finalizacion de la compra de cartas");
-			} else {
-				//esta boleana servira para saber si se ha insertado en la baraja o no
-				boolean existe = false;
-				//recorremos todo el array de cartas compradas del usuario para saber si podemos insertarlo en la base de datos
+				if (carta_id.intValue() < 0) {
+					salir = true;
+					System.out.println("Finalizacion de la creacion de la baraja");
+					break;
+				} else {
+					//esta boleana servira para saber si se ha insertado en la baraja o no
+					boolean existe = false;
+					//recorremos todo el array de cartas compradas del usuario para saber si podemos insertarlo en la base de datos
 
-				for (Number busquedaArrayCompradas : arrayCartasCompradas) {
+					for (Number busquedaArrayCompradas : arrayCartasCompradas) {
 
-					cartaRepetidas.put(busquedaArrayCompradas, cartaRepetida);
+						if (busquedaArrayCompradas.intValue() == carta_id.intValue()) {
 
-					Long l= Long.valueOf(carta_id.toString());
+							Long l= Long.valueOf(carta_id.toString());
 
-					if (arrayCartasCompradas.contains(l)) {
-						//Con esto cogemos todos los datos de esta carta para saber su coste de invocacion y asi sumarlo al coste de la baraja
-						FindIterable<Document> findIt = collectionCards.find(eq("id", carta_id));
-						Document doc2 = findIt.first();
+							if (arrayCartasCompradas.contains(l)) {
+								//Con esto cogemos todos los datos de esta carta para saber su coste de invocacion y asi sumarlo al coste de la baraja
+								FindIterable<Document> findIt = collectionCards.find(eq("id", carta_id));
+								Document doc2 = findIt.first();
 
-						//si su coste no supera los 60 se inserta la carta a la baraja
-						if(sumaCosteBaraja < 60) {
+								//si su coste no supera los 60 se inserta la carta a la baraja
+								if(sumaCosteBaraja < 60) {
 
-							//ERROR AQUI
-							if (cartaRepetidas.get(carta_id) < 2) {
-								System.out.println("Carta " + carta_id + " insertada a la baraja " + nombre_baraja + " para el usuario " + loginUser.getNom_usuario());
-								//Lo insertamos en la baraja
-								arrayCartasBaraja.add(carta_id.intValue());
-								//lo sumamos al coste de la baraja
-								sumaCosteBaraja = sumaCosteBaraja + (Integer) doc2.get("coste_invocacion");
-								//como la carta existia y se ha insertado la booleana se cambia para confirmar de que se ha insertado
-								existe = true;
-								//le sumamos 1 a la cantidad de la carta
-								cartaRepetidas.put(carta_id, cartaRepetidas.get(carta_id) + 1);
-								break;
-							} else {
-								System.out.println("Carta repetida, no se puede tener mas de dos cartas repetidas");
-								cartaRepetida = 0;
+									cartaRepetidas.put(busquedaArrayCompradas.intValue(), cartaRepetidas.get(carta_id.intValue()));
+
+									//System.out.println("Resultado HashMap: " + cartaRepetidas.toString());
+									if(cartaRepetidas.get(carta_id.intValue()) == null) {
+										System.out.println("Carta " + carta_id + " insertada a la baraja " + nombre_baraja + " para el usuario " + loginUser.getNom_usuario());
+										//Lo insertamos en la baraja
+										arrayCartasBaraja.add(carta_id.intValue());
+										//lo sumamos al coste de la baraja
+										sumaCosteBaraja = sumaCosteBaraja + (Integer) doc2.get("coste_invocacion");
+										//como la carta existia y se ha insertado la booleana se cambia para confirmar de que se ha insertado
+										existe = true;
+										//le sumamos 1 a la cantidad de la carta
+										cartaRepetidas.put(carta_id.intValue(), 1);
+										cantidadCartas++;
+										break;
+
+									}else if (cartaRepetidas.get(carta_id.intValue()) < 2 ) {
+										System.out.println("Carta " + carta_id + " insertada a la baraja " + nombre_baraja + " para el usuario " + loginUser.getNom_usuario());
+										//Lo insertamos en la baraja
+										arrayCartasBaraja.add(carta_id.intValue());
+										//lo sumamos al coste de la baraja
+										sumaCosteBaraja = sumaCosteBaraja + (Integer) doc2.get("coste_invocacion");
+										//como la carta existia y se ha insertado la booleana se cambia para confirmar de que se ha insertado
+										existe = true;
+										//le sumamos 1 a la cantidad de la carta
+										cartaRepetidas.put(carta_id.intValue(), cartaRepetidas.get(carta_id.intValue()) + 1);
+										cantidadCartas++;
+										break;
+									} else {
+										System.out.println("Carta repetida, no se puede tener mas de dos cartas repetidas");
+									}
+
+								} else {
+									//Tambien finaliza el programa cuando supera el coste de invocacion de la baraja
+									System.out.println("Baraja acabada. Coste de invocacion superado");
+									System.out.println();
+									salir = true;
+								}
+
 							}
-							
-						} else {
-							//Tambien finaliza el programa cuando supera el coste de invocacion de la baraja
-							System.out.println("Baraja acabada. Coste de invocacion superado");
-							salir = true;
 						}
+					}
 
+					if (existe == false) {
+						System.out.println("La carta no existe o ya esta la baraja, no se puede insertar");
+						System.out.println();
+					} else if (cantidadCartas == 20) {
+						System.out.println("Se ha llegado al numero maximo de cartas de la baraja");
+						System.out.println();
+						cantidadCartas++;
+						salir = true;
 					}
 				}
-
-				if (existe == false) {
-					System.out.println("La carta no existe o ya esta la baraja, no se puede insertar");
-				}
 			}
+
 		}
 
 		//finalmente insertamos la baraja en la base de datos
@@ -411,6 +440,297 @@ public class Metodos {
 				.append("valor_baraja", baraja.getValor_baraja()).append("cartas_barajas", baraja.getCartas_baraja());
 
 		collectionDecks.insertOne(barajaDocument);
+
+		arrayBarajasUser.add(baraja.getBaraja_id());
+
+		Document buscarIdUsuario = new Document("usuario_id", loginUser.getUsuario_id());
+
+		Document usuarioConBarajaNueva = new Document("$set", new Document("barajas_usuario", arrayBarajasUser));
+
+		collectionUsers.findOneAndUpdate(buscarIdUsuario, usuarioConBarajaNueva);
+
+		System.out.println("======================================================");
+		System.out.println("Nueva baraja creada para " + loginUser.getNom_usuario());
+		System.out.println("------------------------------------------------------");
+		System.out.println("Id Baraja: "+ baraja.getBaraja_id());
+		System.out.println("Nombre baraja: " + baraja.getNombre_baraja());
+		System.out.println("Valor baraja: " + baraja.getValor_baraja());
+		System.out.println("Cartas de la baraja: " + baraja.getCartas_baraja());
+	}
+
+
+	public static void editarBaraja(MongoClient mongo, MongoDatabase database) {
+		MongoCollection<Document> collectionDecks = database.getCollection("Decks");
+		MongoCollection<Document> collectionCards = database.getCollection("Cards");
+
+		ArrayList<Integer> arrayCartasBaraja = new ArrayList<Integer>();
+		ArrayList<Integer> arrayCartasCompradas = new ArrayList<Integer>();
+		HashMap<Number, Integer> arrayCartasRepetidas = new HashMap<Number, Integer>();
+		ArrayList<Integer> arrayBarajasUsuario = new ArrayList<Integer>();
+		arrayBarajasUsuario = loginUser.getBarajas_usuario();
+
+		int cantidadCartasBaraja;
+		int sumaCosteBaraja;
+		
+		FindIterable<Document> valorBarajaIte;
+		Document valorBarajaDoc;
+		int valorBaraja;
+		
+		System.out.print("Escribe la id de la baraja que quieres modificar, barajas que tiene " + loginUser.getNom_usuario() + ": " + arrayBarajasUsuario + " => ");
+		int baraja_id = (int) leerNumber();
+
+		if (arrayBarajasUsuario.contains(baraja_id)) {
+
+			Document busquedaBaraja = new Document();
+			busquedaBaraja.put("baraja_id", baraja_id);
+			Iterator<Document> iter = collectionDecks.find(busquedaBaraja).iterator();
+
+			if(iter.hasNext()) {
+				Document barajaDoc = iter.next();
+
+				Baraja baraja = new Baraja();
+				baraja.setBaraja_id((int) barajaDoc.get("baraja_id"));
+				baraja.setNombre_baraja((String) barajaDoc.get("nombre_baraja"));
+				baraja.setValor_baraja((int) barajaDoc.get("valor_baraja"));
+				baraja.setCartas_baraja((ArrayList<Integer>) barajaDoc.get("cartas_barajas"));
+
+				System.out.println("=========================================================");
+				System.out.println("Datos de la baraja:");
+				System.out.println("Baraja id: " + baraja.getBaraja_id());
+				System.out.println("Nombre baraja: " + baraja.getNombre_baraja());
+				System.out.println("Valor de la baraja: " + baraja.getValor_baraja());
+				System.out.println("Cartas de la baraja: " + baraja.getCartas_baraja().toString());
+				System.out.println("=========================================================");
+
+				System.out.println("Que quieres modificar de la baraja");
+				System.out.println("1.-Nombre baraja");
+				System.out.println("2.-Insertar carta a la baraja");
+				System.out.println("3.-Eliminar carta de la baraja");
+				System.out.print("Escoge la opcion que quieres: ");
+				int caso = (int) leerNumber();
+
+				switch (caso) {
+				case 1:
+
+					System.out.print("Introduce nuevo nombre del mazo: ");
+					String nuevoNombreBaraja = leerString();
+					baraja.setNombre_baraja(nuevoNombreBaraja);
+
+					Document nuevaBarajaNombre = new Document("baraja_id", baraja.getBaraja_id()).append("nombre_baraja", baraja.getNombre_baraja())
+							.append("valor_baraja", baraja.getValor_baraja())
+							.append("cartas_barajas", baraja.getCartas_baraja());
+
+					collectionDecks.findOneAndReplace(barajaDoc, nuevaBarajaNombre);
+
+					System.out.println("=========================================================");
+					System.out.println("Cambios de la baraja:");
+					System.out.println("Baraja id: " + baraja.getBaraja_id());
+					System.out.println("*Nombre baraja: " + baraja.getNombre_baraja());
+					System.out.println("Valor de la baraja: " + baraja.getValor_baraja());
+					System.out.println("Cartas de la baraja: " + baraja.getCartas_baraja().toString());
+					System.out.println("=========================================================");
+					System.out.println("Edicion finalizada");
+					break;
+
+				case 2:
+					arrayCartasBaraja = baraja.getCartas_baraja();
+					arrayCartasCompradas = loginUser.getCartas_compradas();
+					ArrayList<Integer> arrayCartasBarajaCopia = new ArrayList<Integer>();
+					
+					for (Number carta_id : arrayCartasBaraja) {
+						arrayCartasBarajaCopia.add(carta_id.intValue());
+						
+						for (Number carta_idBusqueda : arrayCartasBarajaCopia) {
+							arrayCartasRepetidas.put(carta_idBusqueda.intValue(), arrayCartasRepetidas.get(carta_idBusqueda.intValue()));
+							
+							if(arrayCartasRepetidas.get(carta_idBusqueda.intValue()) == null) {
+								//le sumamos 1 a la cantidad de la carta
+								arrayCartasRepetidas.put(carta_idBusqueda.intValue(), 1);
+								break;
+
+							}else if (arrayCartasRepetidas.get(carta_idBusqueda.intValue()) < 2 ) {
+								//le sumamos 1 a la cantidad de la carta
+								arrayCartasRepetidas.put(carta_idBusqueda.intValue(), arrayCartasRepetidas.get(carta_idBusqueda.intValue()) + 1);
+								break;
+								
+							}
+						}
+					}
+					
+					System.out.println("Hashmap: "+arrayCartasRepetidas);
+					cantidadCartasBaraja = arrayCartasBaraja.size();
+					sumaCosteBaraja = 0;
+					
+					valorBarajaIte = collectionDecks.find(eq("baraja_id", baraja_id));
+					valorBarajaDoc = valorBarajaIte.first();
+					valorBaraja = (Integer) valorBarajaDoc.get("valor_baraja");
+					
+					if(cantidadCartasBaraja < 20) {
+						System.out.print("Introduce el id de la carta que quieres insertar en la baraja: ");
+						Number idCarta = leerNumber();
+
+						for (Number busquedaArrayCompradas : arrayCartasCompradas) {
+
+							if (busquedaArrayCompradas.intValue() == idCarta.intValue()) {
+
+								Long l= Long.valueOf(idCarta.toString());
+
+								if (arrayCartasCompradas.contains(l)) {
+									
+									FindIterable<Document> valorCarta = collectionCards.find(eq("id", idCarta));
+									Document valorCartaDoc = valorCarta.first();
+									
+									arrayCartasRepetidas.put(idCarta.intValue(), arrayCartasRepetidas.get(idCarta.intValue()));
+									System.out.println("Fallo hashmap: "+arrayCartasRepetidas.get(idCarta.intValue()));
+									
+									if(arrayCartasRepetidas.get(idCarta.intValue()) < 2) {
+										//lo sumamos al coste de la baraja
+										sumaCosteBaraja = valorBaraja + (Integer) valorCartaDoc.get("coste_invocacion");
+										
+										if(sumaCosteBaraja <= 60) {
+											
+											arrayCartasBaraja.add(idCarta.intValue());
+											
+											baraja.setValor_baraja(sumaCosteBaraja);
+											baraja.setCartas_baraja(arrayCartasBaraja);
+											
+											Document nuevaBarajaCartas = new Document("baraja_id", baraja.getBaraja_id()).append("nombre_baraja", baraja.getNombre_baraja())
+													.append("valor_baraja", baraja.getValor_baraja())
+													.append("cartas_barajas", baraja.getCartas_baraja());
+
+											collectionDecks.findOneAndReplace(barajaDoc, nuevaBarajaCartas);
+
+											System.out.println("=========================================================");
+											System.out.println("Cambios de la baraja:");
+											System.out.println("Baraja id: " + baraja.getBaraja_id());
+											System.out.println("Nombre baraja: " + baraja.getNombre_baraja());
+											System.out.println("*Valor de la baraja: " + baraja.getValor_baraja());
+											System.out.println("*Cartas de la baraja: " + baraja.getCartas_baraja().toString());
+											System.out.println("=========================================================");
+											System.out.println("Edicion finalizada");
+											break;
+											
+										} else {
+											System.out.println("No se ha podido insertar la carta porque ha superado el valor maximo de la baraja dando " + sumaCosteBaraja);
+										}
+									} else if(arrayCartasRepetidas.get(idCarta.intValue()) == null) {
+										//lo sumamos al coste de la baraja
+										sumaCosteBaraja = valorBaraja + (Integer) valorCartaDoc.get("coste_invocacion");
+										
+										if(sumaCosteBaraja <= 60) {
+											
+											arrayCartasBaraja.add(idCarta.intValue());
+											
+											baraja.setValor_baraja(sumaCosteBaraja);
+											baraja.setCartas_baraja(arrayCartasBaraja);
+											
+											Document nuevaBarajaCartas = new Document("baraja_id", baraja.getBaraja_id()).append("nombre_baraja", baraja.getNombre_baraja())
+													.append("valor_baraja", baraja.getValor_baraja())
+													.append("cartas_barajas", baraja.getCartas_baraja());
+
+											collectionDecks.findOneAndReplace(barajaDoc, nuevaBarajaCartas);
+
+											System.out.println("=========================================================");
+											System.out.println("Cambios de la baraja:");
+											System.out.println("Baraja id: " + baraja.getBaraja_id());
+											System.out.println("Nombre baraja: " + baraja.getNombre_baraja());
+											System.out.println("*Valor de la baraja: " + baraja.getValor_baraja());
+											System.out.println("*Cartas de la baraja: " + baraja.getCartas_baraja().toString());
+											System.out.println("=========================================================");
+											System.out.println("Edicion finalizada");
+											break;
+											
+										} else {
+											System.out.println("No se ha podido insertar la carta porque ha superado el valor maximo de la baraja dando " + sumaCosteBaraja);
+										}
+									}
+									
+								}
+							}
+						}
+
+					} else {
+						System.out.println("No se puede insertar cartas porque ya supera el maximo de cartas de cartas por baraja, que son 20");
+						System.out.println();
+					}
+
+
+					break;
+
+				case 3:
+					arrayCartasBaraja = baraja.getCartas_baraja();
+					cantidadCartasBaraja = arrayCartasBaraja.size();
+					sumaCosteBaraja = 0;
+					
+					valorBarajaIte = collectionDecks.find(eq("baraja_id", baraja_id));
+					valorBarajaDoc = valorBarajaIte.first();
+					valorBaraja = (Integer) valorBarajaDoc.get("valor_baraja");
+					
+					System.out.println("===================================================");
+					System.out.print("Escribe la id de la carta que quieres borrar de la baraja: ");
+					Number cartaIdEliminar = leerNumber();
+					
+					if (arrayCartasBaraja.contains(cartaIdEliminar)) {
+						
+						if(cantidadCartasBaraja > 1) {
+							
+							int position = 0;
+							
+							for (Number cartaRepe : arrayCartasBaraja) {
+								
+								if(cartaRepe.intValue() == cartaIdEliminar.intValue()) {
+									FindIterable<Document> valorCarta = collectionCards.find(eq("id", cartaIdEliminar));
+									Document valorCartaDoc = valorCarta.first();
+									int valorCartaEliminar =(Integer) valorCartaDoc.get("coste_invocacion");
+									
+									arrayCartasBaraja.remove(position);
+									
+									sumaCosteBaraja = valorBaraja - valorCartaEliminar;
+									
+									baraja.setValor_baraja(sumaCosteBaraja);
+									baraja.setCartas_baraja(arrayCartasBaraja);
+									
+									
+									Document cartaEliminadaDoc = new Document("baraja_id", baraja.getBaraja_id()).append("nombre_baraja", baraja.getNombre_baraja())
+											.append("valor_baraja", sumaCosteBaraja)
+											.append("cartas_barajas", baraja.getCartas_baraja());
+
+									//No me lo cambia en la base de datos pero si en la consola, no se porque no se me updatea
+									collectionDecks.findOneAndReplace(barajaDoc, cartaEliminadaDoc);
+
+									System.out.println("=========================================================");
+									System.out.println("Cambios de la baraja:");
+									System.out.println("Baraja id: " + baraja.getBaraja_id());
+									System.out.println("Nombre baraja: " + baraja.getNombre_baraja());
+									System.out.println("*Valor de la baraja: " + baraja.getValor_baraja());
+									System.out.println("*Cartas de la baraja: " + baraja.getCartas_baraja().toString());
+									System.out.println("=========================================================");
+									System.out.println("Edicion finalizada");
+									break;
+								}else {
+									position++;
+								}
+							}
+							
+						} else {
+							System.out.println("No podemos eliminar mas cartas porque si no, no habran mas cartas");
+						}
+					} else {
+						System.out.println("Esta carta bi existe en la baraja");
+					}
+					
+					break;
+					
+				default:
+					System.out.println("No se modificara nada porque no se escogio ninguna opcion correcta");
+					break;
+				}
+
+			}
+
+		} else {
+			System.out.println(loginUser.getNom_usuario() + " no tiene esta baraja");
+		}
 	}
 
 

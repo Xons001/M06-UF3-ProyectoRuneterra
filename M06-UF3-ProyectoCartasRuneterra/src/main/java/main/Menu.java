@@ -13,7 +13,7 @@ public class Menu {
 	private static Scanner lector = new Scanner(System.in);
 
 	public static void main(String[] args) {
-		//disableLogs();
+		disableLogs();
 
 		MongoClient mongo = Metodos.crearConexion();
 		

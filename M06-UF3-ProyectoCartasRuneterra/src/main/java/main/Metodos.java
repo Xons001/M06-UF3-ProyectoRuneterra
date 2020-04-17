@@ -276,44 +276,48 @@ public class Metodos {
 
 		FindIterable<Document> todasCartas = collectionCards.find();
 
-		ArrayList<Integer> arrayCartasCompradas = loginUser.getCartas_compradas();
+		ArrayList<Integer> arrayCartasCompradas = new ArrayList<Integer>();
+		arrayCartasCompradas = loginUser.getCartas_compradas();
 		ArrayList<Integer> arrayCartasDisponibles = new ArrayList<Integer>();
 
+		System.out.println(arrayCartasCompradas.toString());
 		for (Document document : todasCartas) {
 			arrayCartasDisponibles.add(document.getInteger("id"));
 		}
 
 		while (salir == false) {
 			System.out.print("Escribe la carta id que quieres comprar, escribe un numero negativo para finalizar la compra => ");
-			Number carta_id = leerNumber();
+			int carta_id = (int) leerNumber();
 
-			if (carta_id.intValue() < 0) {
+			if (carta_id < 0) {
 				salir = true;
 				System.out.println("Finalizacion de la compra de cartas");
 			} else {
 				boolean existe = false; 
-				for (Number busquedaArrayDisponibles : arrayCartasDisponibles) {
-					if (carta_id == busquedaArrayDisponibles) {
-						for (Number busquedaArrayCompradas : arrayCartasCompradas) {
+					if (arrayCartasDisponibles.contains(carta_id)) {
+						
 							if (!arrayCartasCompradas.contains(carta_id)) {
+								
 								System.out.println("Carta " + carta_id + " comprada para el usuario " + loginUser.getNom_usuario());
-								arrayCartasCompradas.add(carta_id.intValue());
+								System.out.println();
+								arrayCartasCompradas.add(carta_id);
 								existe = true;
-								break;
+								
 							}
-						}
-
-					}
+						
 				}
+
 				if (existe == false) {
 					System.out.println("La carta no existe o ya esta en lista comprada, no se puede insertar");
+					System.out.println();
 				}
 
 			}
 		}
 
+		loginUser.setCartas_compradas(arrayCartasCompradas);
 		Document query = new Document("usuario_id", loginUser.getUsuario_id());
-		Document newDoc = new Document("cartas_compradas", arrayCartasCompradas);
+		Document newDoc = new Document("cartas_compradas", loginUser.getCartas_compradas());
 		Document updateDoc = new Document("$set", newDoc);
 
 		collectionUsers.updateOne(query, updateDoc);
